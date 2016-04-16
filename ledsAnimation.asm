@@ -22,7 +22,7 @@
 ; ------------------------------------------------------------------------------
 .def		auxReg		= R16
 .def		auxReg2		= R17
-.def		counter		= R18
+;.def		counter		= R18
 .def		pushedLed	= R19
 .def		pusherLeds	= R20
 .def		ledsOut		= R21
@@ -60,8 +60,8 @@ main:
 	LDI		auxReg, (1 << buttonBit)	; BUTTON port config. as input pull-up
 	OUT		buttonPort, auxReg			; ---
 	LDI		pushedLed, 0b00000010		; turn on led1 for pushed
-	LDI		pusherLeds, 0b00000001		; turn on led0 for pushers	
-	LDI		counter, 0x00				; Reset counter
+	LDI		pusherLeds, 0b00000001		; turn on led0 for pushers
+;	LDI		counter, 0x00				; Reset counter
 	
 mainLoop:
 	CALL	compareLeds					; Call animation subroutine
@@ -105,16 +105,16 @@ endPusherMove:
 
 
 ; ------------------------------------------------------------------------------
-; Animation subroutine
+; Show leds subroutine
 ; Registers:	-
 ; Constants:	-
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
-showLeds:								; 
-	MOV		ledsOut, pusherLeds			
-	OR		ledsOut, pushedLed			; now pushedLed equals ledsOut
-	OUT		ledsPort, ledsOut			; turn on pushedLed OR pusherLeds 
-	CALL	delay300ms					;
+showLeds: 
+	MOV		ledsOut, pusherLeds			; Set register ledsOut with pusherLeds
+	OR		ledsOut, pushedLed			; OR op with pushedLed
+	OUT		ledsPort, ledsOut			; Turn leds on 
+	CALL	delay300ms					; Call delay subroutine
 	RET
 
 ; ------------------------------------------------------------------------------
@@ -125,17 +125,17 @@ delay300ms:
 	PUSH	R19
 	PUSH	R20
 
-    LDI		R18, 25
-    LDI		R19, 90
-    LDI		R20, 176
+	LDI		R18, 25
+	LDI		R19, 90
+	LDI		R20, 176
 delay300msLoop: 
 	DEC		R20
-    BRNE	delay300msLoop
-    DEC		r19
-    BRNE	delay300msLoop
-    DEC		r18
-    BRNE	delay300msLoop
-   	NOP
+	BRNE	delay300msLoop
+	DEC		R19
+	BRNE	delay300msLoop
+	DEC		R18
+	BRNE	delay300msLoop
+	NOP
 	NOP
 	POP		R20
 	POP		R19
