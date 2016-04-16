@@ -21,11 +21,10 @@
 ; Register and constants definitions
 ; ------------------------------------------------------------------------------
 .def		auxReg		= R16
-.def		auxReg2		= R17
-;.def		counter		= R18
-.def		pushedLed	= R19
-.def		pusherLeds	= R20
-.def		ledsOut		= R21
+;.def		counter		= R17
+.def		pushedLed	= R18
+.def		pusherLeds	= R19
+.def		ledsOut		= R20
 .equ		buttonDdr	= DDRB
 .equ		buttonPort	= PORTB
 .equ		buttonPin	= PINB
@@ -89,8 +88,8 @@ endCompare:
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
 pusherMove:
-	MOV		auxReg2, pusherLeds			; Uses auxReg2 to compare pushedLed
-	AND		auxReg2, pushedLed			;	with pusherLeds
+	MOV		auxReg, pusherLeds			; Uses auxReg2 to compare pushedLed
+	AND		auxReg, pushedLed			;	with pusherLeds
 	BRNE	endPusherMove				; If != 0 MSB of pusherLeds = pushedLed
 	CALL	showLeds					; If 0, show leds,
 	LSL		pusherLeds					; Shift left pusherLeds
