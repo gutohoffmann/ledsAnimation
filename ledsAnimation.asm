@@ -21,10 +21,17 @@
 ; Register and constants definitions
 ; ------------------------------------------------------------------------------
 .def		auxReg		= R16
+<<<<<<< HEAD
 ;.def		counter		= R17
 .def		pushedLed	= R18
 .def		pusherLeds	= R19
 .def		ledsOut		= R20
+=======
+;.def		counter		= R18
+.def		pushedLed	= R19
+.def		pusherLeds	= R20
+.def		ledsOut		= R21
+>>>>>>> origin/master
 .equ		buttonDdr	= DDRB
 .equ		buttonPort	= PORTB
 .equ		buttonPin	= PINB
