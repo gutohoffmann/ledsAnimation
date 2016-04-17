@@ -3,7 +3,7 @@
 ; File:		ledsAnimation.asm
 ; Author:	Augusto Hoffmann
 ; Created:	2016-04-16
-; Modified:	2016-04-16
+; Modified:	2016-04-17
 ; Version:	1.0
 ; Notes:	
 ; ------------------------------------------------------------------------------
@@ -21,22 +21,23 @@
 ; Register and constants definitions
 ; ------------------------------------------------------------------------------
 .def		auxReg		= R16
-;.def		counter		= R17
-.def		pushedLed	= R18
-.def		pusherLeds	= R19
-.def		ledsOut		= R20
-.equ		buttonDdr	= DDRB
-.equ		buttonPort	= PORTB
-.equ		buttonPin	= PINB
-.equ		buttonBit	= PB0
-.equ		ledsDdr		= DDRD
-.equ		ledsPort	= PORTD
+.def		pushedLed	= R17
+.def		pusherLeds	= R18
+.def		ledsOut		= R19
+.equ		buttonDdr	= DDRD
+.equ		buttonPort	= PORTD
+.equ		buttonPin	= PIND
+.equ		buttonBit	= PD2
+.equ		ledsDdr		= DDRB
+.equ		ledsPort	= PORTB
 
 
 
 ; ------------------------------------------------------------------------------
 ; Interruption vectors
 ; ------------------------------------------------------------------------------
+.ORG		0X0000
+JMP		main
 
 
 
@@ -50,9 +51,8 @@
 ; ------------------------------------------------------------------------------
 ; Main code
 ; ------------------------------------------------------------------------------
-.ORG		0X0000
-
 main:
+	SBI		buttonPort, buttonBit		; Button as input tristate
 	LDI		auxReg, 0x00				; LEDS port configured as output low
 	OUT		ledsPort, auxReg			; ---
 	LDI		auxReg, 0xFF				; ---
@@ -61,15 +61,46 @@ main:
 	OUT		buttonPort, auxReg			; ---
 	LDI		pushedLed, 0b00000010		; turn on led1 for pushed
 	LDI		pusherLeds, 0b00000001		; turn on led0 for pushers
-;	LDI		counter, 0x00				; Reset counter
 	
-mainLoop:
+mainLoop:	
 	CALL	compareLeds					; Call animation subroutine
 	JMP		mainLoop
 
+
+
+; ------------------------------------------------------------------------------
+; Button press subroutine
+; Registers:	buttonPin
+; Constants:	-
+; Dependencies:	-
+; ------------------------------------------------------------------------------
+buttonPress:							; Button handling
+	CALL	debounce					; Debounce subroutine
+
+buttonPress1:
+	IN		auxReg, buttonPin			; Wait until button is released
+	SBRS	auxReg, buttonBit			; ---
+	JMP		buttonPress1				; Skip if button press
+	CALL	debounce					; Debounce subroutine
+
+buttonPress2:							; Button handling
+	IN		auxReg, buttonPin			; Wait until button is pressed
+	SBRC	auxReg, buttonBit			; ---
+	JMP		buttonPress2				; Skip if button press
+	CALL	debounce					; Debounce subroutine
+
+buttonPress3:
+	IN		auxReg, buttonPin			; Wait until button is released
+	SBRS	auxReg, buttonBit			; ---
+	JMP		buttonPress3				; Skip if button press
+	CALL	debounce					; Debounce subroutine
+	RET
+
+	
+
 ; ------------------------------------------------------------------------------
 ; Leds bits comparision subroutine
-; Registers:	-
+; Registers:	pushedLed, 
 ; Constants:	-
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
@@ -82,9 +113,11 @@ endCompare:
 	LDI		pushedLed, 0b00000010		; Reset pushedLed value
 	RET									; Return to main loop
 
+
+
 ; ------------------------------------------------------------------------------
 ; Leds movement subroutine
-; Registers:	-
+; Registers:	pusherLeds, pushedLed
 ; Constants:	-
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
@@ -106,7 +139,7 @@ endPusherMove:
 
 ; ------------------------------------------------------------------------------
 ; Show leds subroutine
-; Registers:	-
+; Registers:	pusherLeds, pushedLed, ledsOut
 ; Constants:	-
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
@@ -116,6 +149,8 @@ showLeds:
 	OUT		ledsPort, ledsOut			; Turn leds on 
 	CALL	delay300ms					; Call delay subroutine
 	RET
+
+
 
 ; ------------------------------------------------------------------------------
 ; Delay of 300 ms subroutine
@@ -128,7 +163,12 @@ delay300ms:
 	LDI		R18, 25
 	LDI		R19, 90
 	LDI		R20, 176
-delay300msLoop: 
+delay300msLoop:
+
+	IN		auxReg, buttonPin			; Get button state
+	SBRS	auxReg, buttonBit			; ---
+	CALL	buttonPress					; ---
+
 	DEC		R20
 	BRNE	delay300msLoop
 	DEC		R19
@@ -143,9 +183,39 @@ delay300msLoop:
 	RET
 
 
+
+; ------------------------------------------------------------------------------
+; Debounce subroutine
+; Registers:	-
+; Constants:	-
+; Dependencies:	-
+; ------------------------------------------------------------------------------
+debounce:
+	PUSH	R18
+	PUSH	R19
+	PUSH	R20
+    LDI		R18, 2
+    LDI		R19, 160
+    LDI		R20, 142
+debounceLoop: 
+	DEC		R20
+    BRNE	debounceLoop
+    DEC		R19
+    BRNE	debounceLoop
+    DEC		R18
+    BRNE	debounceLoop
+	POP		R20
+	POP		R19
+	POP		R18
+    NOP
+	NOP
+	RET
+
+
 ; ------------------------------------------------------------------------------
 ; Interrupt handlers
 ; ------------------------------------------------------------------------------
+
 
 
 ; ------------------------------------------------------------------------------
