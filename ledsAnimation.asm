@@ -3,7 +3,7 @@
 ; File:		ledsAnimation.asm
 ; Author:	Augusto Hoffmann
 ; Created:	2016-04-16
-; Modified:	2016-04-17
+; Modified:	2016-04-21
 ; Version:	1.0
 ; Notes:	
 ; ------------------------------------------------------------------------------
@@ -23,13 +23,12 @@
 .def		auxReg		= R16
 .def		pushedLed	= R17
 .def		pusherLeds	= R18
-.def		ledsOut		= R19
-.equ		buttonDdr	= DDRD
-.equ		buttonPort	= PORTD
-.equ		buttonPin	= PIND
-.equ		buttonBit	= PD2
-.equ		ledsDdr		= DDRB
-.equ		ledsPort	= PORTB
+.equ		buttonDdr	= DDRB
+.equ		buttonPort	= PORTB
+.equ		buttonPin	= PINB
+.equ		buttonBit	= PB0
+.equ		ledsDdr		= DDRD
+.equ		ledsPort	= PORTD
 
 
 
@@ -37,7 +36,6 @@
 ; Interruption vectors
 ; ------------------------------------------------------------------------------
 .ORG		0X0000
-JMP		main
 
 
 
@@ -67,6 +65,18 @@ mainLoop:
 	JMP		mainLoop
 
 
+
+; ------------------------------------------------------------------------------
+; Button read subroutine
+; Registers:	buttonPin
+; Constants:	-
+; Dependencies:	-
+; ------------------------------------------------------------------------------
+buttonRead:
+	IN		auxReg, buttonPin			; Get button state
+	SBRS	auxReg, buttonBit			; ---
+	CALL	buttonPress					; ---
+	RET
 
 ; ------------------------------------------------------------------------------
 ; Button press subroutine
@@ -105,7 +115,7 @@ buttonPress3:
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
 compareLeds:
-	SUBI	pushedLed, 0				; Only for activate Z flag on SREG
+	SUBI	pushedLed, 0				; Just for activate Z flag on SREG
 	BREQ	endCompare					; Branch endCompare if pushedLed = 0
 	CALL	pusherMove					; Call animation for pusherLeds
 	JMP		compareLeds					; Repeat it until pushedLed != 0
@@ -122,12 +132,12 @@ endCompare:
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
 pusherMove:
-	MOV		auxReg, pusherLeds			; Uses auxReg2 to compare pushedLed
+	MOV		auxReg, pusherLeds			; Uses auxReg to compare pushedLed
 	AND		auxReg, pushedLed			;	with pusherLeds
 	BRNE	endPusherMove				; If != 0 MSB of pusherLeds = pushedLed
 	CALL	showLeds					; If 0, show leds,
 	LSL		pusherLeds					; Shift left pusherLeds
-	SUBI	pusherLeds, -1				; Set LSB of pusherLeds
+	INC		pusherLeds					; pusherLeds + 1
 	JMP		pusherMove					; Repeat
 endPusherMove:
 	LSL		pushedLed					; When equals, shift left pushedLed
@@ -144,31 +154,28 @@ endPusherMove:
 ; Dependencies:	-
 ; ------------------------------------------------------------------------------
 showLeds: 
-	MOV		ledsOut, pusherLeds			; Set register ledsOut with pusherLeds
-	OR		ledsOut, pushedLed			; OR op with pushedLed
-	OUT		ledsPort, ledsOut			; Turn leds on 
+	MOV		auxReg, pusherLeds			; Set auxReg with pusherLeds
+	OR		auxReg, pushedLed			; OR op with pushedLed
+	OUT		ledsPort, auxReg			; Turn leds on
 	CALL	delay300ms					; Call delay subroutine
 	RET
 
 
 
 ; ------------------------------------------------------------------------------
-; Delay of 300 ms subroutine
+; Delay of 300 ms subroutine including call buttonRead subroutine
 ; ------------------------------------------------------------------------------
 delay300ms:
 	PUSH	R18
 	PUSH	R19
 	PUSH	R20
 
-	LDI		R18, 25
-	LDI		R19, 90
-	LDI		R20, 176
+	LDI		R18, 5
+	LDI		R19, 226
+	LDI		R20, 128
+
 delay300msLoop:
-
-	IN		auxReg, buttonPin			; Get button state
-	SBRS	auxReg, buttonBit			; ---
-	CALL	buttonPress					; ---
-
+	CALL	buttonRead					; Call buttonRead subroutine
 	DEC		R20
 	BRNE	delay300msLoop
 	DEC		R19
